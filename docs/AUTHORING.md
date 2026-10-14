@@ -44,6 +44,21 @@ Captions appear under the canvas. They're what students read, so:
 
 Canvas text is for **labels only**: names of things, values, short callouts and formulas.
 
+### Read aloud
+
+Students can turn on **Read aloud**, which speaks each caption with the browser's voice. Symbols
+are rewritten into words automatically ("CO₂" → "C O 2", "πr²" → "pi r squared", "3/4" →
+"3 fourths", "15 N" → "15 newtons", "|5 − 1|" → "the absolute value of 5 minus 1"). If a
+caption still wouldn't sound right when read out, give the step a `say` with the exact words to
+speak:
+
+```js
+{ caption: "Sodium becomes Na⁺.", say: "Sodium becomes a sodium ion, N A plus.", do: [ ... ] }
+```
+
+To hear how every caption will be read, open the built app's console and run
+`CC.narration.speakable("your caption")`.
+
 ## The file
 
 `content/topics/<level>/<section>/<id>.js`, containing exactly one call and no other top-level

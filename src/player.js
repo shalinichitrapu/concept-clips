@@ -17,6 +17,10 @@
               <button class="btn primary" data-act="play" type="button">Play</button>
               <button class="btn" data-act="next" type="button">Next</button>
               <button class="btn" data-act="replay" type="button">Replay</button>
+              <button class="btn narrate" data-act="narrate" type="button" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>
+                <span>Read aloud</span>
+              </button>
             </div>
             <div class="dots"></div>
           </div>
@@ -29,7 +33,9 @@
     caption.id = svg.id + "-caption";
     svg.setAttribute("aria-labelledby", caption.id);
     const stage = CC.createStage(svg);
-    let topic = null, cur = -1, playing = false;
+    let topic = null, cur = -1, playing = false, speech = Promise.resolve();
+    const narr = CC.narration;
+    if (!narr.supported) q('[data-act="narrate"]').hidden = true;
     const last = () => stage.flat.length - 1;
 
     function setCaption(k, animate) {
@@ -39,7 +45,15 @@
       q(".count").textContent = k < 0 ? `${flat.length} steps` : `Step ${k + 1} of ${flat.length}`;
       if (animate && !CC.reduceMotion) caption.animate([{ opacity: 0, transform: "translateY(4px)" }, { opacity: 1, transform: "none" }], { duration: 350 });
     }
+    const sayText = k => stage.flat[k].step.say || stage.flat[k].step.caption;
+    function narrate(k) {
+      speech = narr.on && k >= 0 ? narr.speak(sayText(k)) : Promise.resolve();
+      q(".caption-row").classList.toggle("speaking", narr.on && k >= 0);
+      speech.then(() => { if (cur === k) q(".caption-row").classList.remove("speaking"); });
+    }
     function ui() {
+      const nb = q('[data-act="narrate"]');
+      nb.setAttribute("aria-pressed", String(narr.on));
       const play = q('[data-act="play"]');
       play.textContent = playing ? "Pause" : (cur >= last() || cur < 0 ? "Play" : "Resume");
       q('[data-act="back"]').disabled = cur <= 0;
@@ -59,6 +73,7 @@
     }
     async function runStep(k) {
       setCaption(k, true);
+      narrate(k);
       ui();
       return stage.runStep(k);
     }
@@ -73,13 +88,17 @@
       while (playing && cur < last()) {
         cur++;
         if (!(await runStep(cur))) return;
-        if (cur < last()) await wait(hold(cur));
+        if (cur < last()) {
+          // With read aloud on, move on once the voice has finished the caption.
+          if (narr.on) { await speech; if (my === stage.version && playing) await wait(600); }
+          else await wait(hold(cur));
+        }
         if (my !== stage.version) return;
       }
       playing = false;
       ui();
     }
-    function pause() { playing = false; ui(); }
+    function pause() { playing = false; narr.cancel(); ui(); }
     async function goto(k) {
       playing = false;
       cur = k;
@@ -96,7 +115,16 @@
       else if (act === "next" && cur < last()) goto(cur + 1);
       else if (act === "back" && cur > 0) goto(cur - 1);
       else if (act === "replay") { cur = -1; play(); }
+      else if (act === "narrate") toggleNarration();
     });
+
+    function toggleNarration() {
+      narr.on = !narr.on;
+      // Turning it on reads the current caption straight away.
+      if (narr.on && cur >= 0) narrate(cur);
+      else q(".caption-row").classList.remove("speaking");
+      ui();
+    }
 
     function open(t, { autoplay = false } = {}) {
       topic = t;
@@ -138,7 +166,8 @@
 
     return {
       open, play, pause, goto, rebuild, stage,
-      stop() { playing = false; stage.cancel(); },
+      stop() { playing = false; narr.cancel(); stage.cancel(); },
+      toggleNarration,
       next() { if (cur < last()) goto(cur + 1); },
       back() { if (cur > 0) goto(cur - 1); },
       toggle() { playing ? pause() : play(); },

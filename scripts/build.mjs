@@ -20,7 +20,7 @@ export function build({ sections = null, out = null } = {}) {
   const inSection = f => !sections || sections.some(s => f.includes(`/${s}/`) || f.endsWith(`/${s}.js`));
   const art = ["src/art/core.js", ...walk("src/art").filter(f => !f.endsWith("core.js") && inSection(f)).sort()];
   const topics = walk("content/topics").filter(inSection).sort();
-  const scripts = ["src/core.js", ...art, "src/renderer.js", "src/player.js", "content/catalog.js", ...topics, "src/app.js"];
+  const scripts = ["src/core.js", ...art, "src/renderer.js", "src/narration.js", "src/player.js", "content/catalog.js", ...topics, "src/app.js"];
   const inline = f => `<script>/* ${f} */\n${read(f).replace(/<\/script/gi, "<\\/script")}\n</script>`;
 
   const shell = read("src/shell.html").replace("/*STYLES*/", () => read("src/styles.css"));

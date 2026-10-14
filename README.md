@@ -17,6 +17,10 @@ open dist/index.html
 Every page has its own link: `#high` (home), `#high.math` (a section) and
 `#high.math.manhattan-distance` (a topic).
 
+**Read aloud:** the player can speak each step's caption using the browser's built-in voices
+(free, no server). Autoplay waits for the voice to finish before moving on. Math and science
+symbols are turned into words first, so "CO₂" and "πr²" are pronounced correctly.
+
 ## Host it
 
 Upload `dist/index.html` to any static host: Vercel, Netlify, GitHub Pages or Cloudflare Pages.
@@ -46,6 +50,7 @@ own browser instead.
 src/core.js          shared namespace and SVG helpers
 src/renderer.js      draws scenes and plays steps; validates topic files
 src/player.js        caption, controls, step dots, scene list
+src/narration.js     read aloud: browser voices and symbol pronunciation
 src/app.js           pages, routing, middle/high switch
 src/art/             illustration library (core.js plus one file per section)
 src/styles.css       all styles, as light and dark theme tokens
