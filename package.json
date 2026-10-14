@@ -1,0 +1,15 @@
+{
+  "name": "concept-clips",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Short animated explainers for middle and high school subjects.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node tests/check.mjs",
+    "start": "node scripts/build.mjs && open dist/index.html"
+  },
+  "devDependencies": {
+    "playwright": "1.47.2"
+  }
+}
