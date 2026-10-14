@@ -46,8 +46,10 @@ Canvas text is for **labels only**: names of things, values, short callouts and 
 
 ### Read aloud
 
-Students can turn on **Read aloud**, which speaks each caption with the browser's voice. Symbols
-are rewritten into words automatically ("CO₂" → "C O 2", "πr²" → "pi r squared", "3/4" →
+Students can turn on **Read aloud**, which plays a recording of each caption in a natural voice.
+After adding or changing captions, record them with `tools/tts/generate.py` (see
+[tools/tts/README.md](../tools/tts/README.md)); until then the browser's own voice reads them.
+Symbols are rewritten into words automatically ("CO₂" → "C O 2", "πr²" → "pi r squared", "3/4" →
 "3 fourths", "15 N" → "15 newtons", "|5 − 1|" → "the absolute value of 5 minus 1"). If a
 caption still wouldn't sound right when read out, give the step a `say` with the exact words to
 speak:
@@ -56,8 +58,8 @@ speak:
 { caption: "Sodium becomes Na⁺.", say: "Sodium becomes a sodium ion, N A plus.", do: [ ... ] }
 ```
 
-To hear how every caption will be read, open the built app's console and run
-`CC.narration.speakable("your caption")`.
+To see the exact words that will be spoken, open the built app's console and run
+`CC.speakable("your caption")`.
 
 ## The file
 

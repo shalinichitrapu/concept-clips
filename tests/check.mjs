@@ -109,6 +109,12 @@ if (filter && filter !== "app" && !selected.length) console.log(`No topic matche
 for (const t of selected) {
   const r = report.topics[t.key] = { validation: t.errs, layout: [], warnings: [], screenshots: [] };
   if (t.errs.length) continue;
+  const unrecorded = await light.evaluate(k => {
+    const t = CC.topics.find(x => `${x.level}.${x.section}.${x.id}` === k);
+    const n = t.scenes.reduce((a, sc) => a + sc.steps.length, 0);
+    return [...Array(n).keys()].filter(i => !CC.audio.files[`${k}/${i}`]).map(i => i + 1);
+  }, t.key);
+  if (unrecorded.length) r.warnings.push(`no read-aloud recording for step${unrecorded.length > 1 ? "s" : ""} ${unrecorded.join(", ")}; run tools/tts/generate.py (the browser voice is used until then)`);
   const dir = path.join(OUT, t.key);
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
@@ -175,7 +181,12 @@ if (!filter || filter === "app") {
   const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
   page.on("pageerror", e => report.pageErrors.push(`[read aloud] ${e.message}`));
   await page.addInitScript(() => {
-    window.__spoken = [];
+    window.__spoken = []; window.__played = [];
+    // Recordings "play" for 150 ms and are noted instead of heard.
+    HTMLMediaElement.prototype.play = function () {
+      __played.push(this.src); setTimeout(() => this.onended && this.onended(), 150); return Promise.resolve();
+    };
+    HTMLMediaElement.prototype.pause = function () {};
     window.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
     let cur = null;
     Object.defineProperty(window, "speechSynthesis", { configurable: true, value: {
@@ -192,11 +203,13 @@ if (!filter || filter === "app") {
     out.buttonShown = !document.querySelector('[data-act="narrate"]').hidden;
     document.querySelector('[data-act="narrate"]').click();
     out.pressed = document.querySelector('[data-act="narrate"]').getAttribute("aria-pressed");
-    __spoken.length = 0;
+    __spoken.length = 0; __played.length = 0;
     await CC.player.goto(1);
     await new Promise(r => setTimeout(r, 1500));
-    out.spokeStep = __spoken.join(" ").length > 0;
-    out.caption = CC.narration.speakable(CC.player.stage.flat[1].step.caption);
+    const t = CC.player.topic;
+    out.file = CC.audio.files[`${t.level}.${t.section}.${t.id}/1`] || null;
+    out.played = __played.join(" ");
+    out.caption = CC.speakable(CC.player.stage.flat[1].step.caption);
     out.spoken = __spoken.join(" ");
     document.querySelector('[data-act="narrate"]').click();
     out.off = document.querySelector('[data-act="narrate"]').getAttribute("aria-pressed");
@@ -204,7 +217,8 @@ if (!filter || filter === "app") {
   });
   if (!r.buttonShown) report.app.push("read aloud: the button is hidden although speech is available");
   if (r.pressed !== "true" || r.off !== "false") report.app.push("read aloud: the button doesn't toggle");
-  if (!r.spokeStep || r.spoken.replace(/\s+/g, " ").trim() !== r.caption.trim()) report.app.push(`read aloud: expected "${r.caption}", heard "${r.spoken}"`);
+  if (r.file) { if (!r.played.endsWith(`audio/${r.file}`) || r.spoken) report.app.push(`read aloud: expected the recording ${r.file}, played "${r.played}", spoke "${r.spoken}"`); }
+  else if (r.spoken.replace(/\s+/g, " ").trim() !== r.caption.trim()) report.app.push(`read aloud: expected "${r.caption}", heard "${r.spoken}"`);
   await page.close();
 }
 await browser.close();
