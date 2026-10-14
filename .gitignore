@@ -2,3 +2,7 @@ node_modules/
 tests/out/
 dist/
 .DS_Store
+tools/tts/.venv/
+tools/tts/models/
+tools/tts/samples/
+tools/tts/captions.json

@@ -17,9 +17,11 @@ open dist/index.html
 Every page has its own link: `#high` (home), `#high.math` (a section) and
 `#high.math.manhattan-distance` (a topic).
 
-**Read aloud:** the player can speak each step's caption using the browser's built-in voices
-(free, no server). Autoplay waits for the voice to finish before moving on. Math and science
-symbols are turned into words first, so "CO₂" and "πr²" are pronounced correctly.
+**Read aloud:** the player can read each step's caption in a natural voice. Every caption is
+recorded ahead of time with Kokoro, a free open-source voice model (see
+[tools/tts/README.md](tools/tts/README.md)), so every student hears the same voice on any
+device. Autoplay waits for the voice to finish before moving on, and math and science symbols
+are turned into words first, so "CO₂" and "πr²" are pronounced correctly.
 
 ## Host it
 
@@ -50,12 +52,16 @@ own browser instead.
 src/core.js          shared namespace and SVG helpers
 src/renderer.js      draws scenes and plays steps; validates topic files
 src/player.js        caption, controls, step dots, scene list
-src/narration.js     read aloud: browser voices and symbol pronunciation
+src/speakable.js     turns captions into words a voice can read ("CO₂" → "C O 2")
+src/narration.js     read aloud: plays recordings, falls back to the browser voice
 src/app.js           pages, routing, middle/high switch
 src/art/             illustration library (core.js plus one file per section)
 src/styles.css       all styles, as light and dark theme tokens
 content/catalog.js   levels and sections
 content/topics/      one file per topic: <level>/<section>/<id>.js
+content/audio/       recorded narration (MP3s plus manifest.json)
 scripts/build.mjs    bundles everything into dist/
+scripts/captions.mjs lists every caption to record
+tools/tts/           records the narration (Python, run locally)
 tests/check.mjs      browser checks and screenshots
 ```

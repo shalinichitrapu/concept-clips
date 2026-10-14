@@ -47,7 +47,7 @@
     }
     const sayText = k => stage.flat[k].step.say || stage.flat[k].step.caption;
     function narrate(k) {
-      speech = narr.on && k >= 0 ? narr.speak(sayText(k)) : Promise.resolve();
+      speech = narr.on && k >= 0 ? narr.speak(sayText(k), `${topic.level}.${topic.section}.${topic.id}/${k}`) : Promise.resolve();
       q(".caption-row").classList.toggle("speaking", narr.on && k >= 0);
       speech.then(() => { if (cur === k) q(".caption-row").classList.remove("speaking"); });
     }

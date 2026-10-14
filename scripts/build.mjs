@@ -20,16 +20,28 @@ export function build({ sections = null, out = null } = {}) {
   const inSection = f => !sections || sections.some(s => f.includes(`/${s}/`) || f.endsWith(`/${s}.js`));
   const art = ["src/art/core.js", ...walk("src/art").filter(f => !f.endsWith("core.js") && inSection(f)).sort()];
   const topics = walk("content/topics").filter(inSection).sort();
-  const scripts = ["src/core.js", ...art, "src/renderer.js", "src/narration.js", "src/player.js", "content/catalog.js", ...topics, "src/app.js"];
+  const scripts = ["src/core.js", ...art, "src/renderer.js", "src/speakable.js", "src/narration.js", "src/player.js", "content/catalog.js", ...topics, "src/app.js"];
   const inline = f => `<script>/* ${f} */\n${read(f).replace(/<\/script/gi, "<\\/script")}\n</script>`;
+  // Recorded narration: the manifest is inlined; the MP3s are copied next to the page.
+  const manifest = "content/audio/manifest.json";
+  const audio = fs.existsSync(path.join(root, manifest)) ? JSON.parse(read(manifest)) : null;
+  const audioScript = `<script>/* ${manifest} */\nCC.audio = ${JSON.stringify(audio || { files: {} })};\n</script>`;
 
   const shell = read("src/shell.html").replace("/*STYLES*/", () => read("src/styles.css"));
   const [head, body] = shell.split("<!--BODY-->");
-  const bodyWithScripts = body.replace("<!--SCRIPTS-->", () => scripts.map(inline).join("\n"));
+  const tags = scripts.map(f => (f === "src/narration.js" ? audioScript + "\n" : "") + inline(f));
+  const bodyWithScripts = body.replace("<!--SCRIPTS-->", () => tags.join("\n"));
+  const copyAudio = dir => {
+    if (!audio) return;
+    fs.mkdirSync(path.join(dir, "audio"), { recursive: true });
+    for (const f of new Set(Object.values(audio.files))) fs.copyFileSync(path.join(root, "content/audio", f), path.join(dir, "audio", f));
+  };
 
   const full = `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n${head.trim()}\n</head>\n<body>\n${bodyWithScripts.trim()}\n</body>\n</html>\n`;
-  if (out) { fs.writeFileSync(out, full); return { topics: topics.length, scripts: scripts.length }; }
+  if (out) { fs.writeFileSync(out, full); copyAudio(path.dirname(out)); return { topics: topics.length, scripts: scripts.length }; }
+  fs.rmSync(path.join(root, "dist"), { recursive: true, force: true });
   fs.mkdirSync(path.join(root, "dist"), { recursive: true });
+  copyAudio(path.join(root, "dist"));
   fs.writeFileSync(path.join(root, "dist/index.html"), full);
   fs.writeFileSync(path.join(root, "dist/preview.html"), `${head.trim()}\n${bodyWithScripts.trim()}\n`);
   return { topics: topics.length, scripts: scripts.length };
