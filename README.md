@@ -3,6 +3,8 @@
 Short animated explainers for middle and high school subjects. Students pick a level, a section
 (Math, Biology...) and a topic, then watch or step through a clip made of a few animated scenes.
 
+**Live site:** https://shalinichitrapu.github.io/concept-clips/
+
 It's a static website with no server, accounts or database. The build bundles everything into a
 single `dist/index.html`, which works from any static host or straight from disk.
 
@@ -19,8 +21,11 @@ Every page has its own link: `#high` (home), `#high.math` (a section) and
 
 ## Host it
 
-Upload `dist/index.html` to any static host: Vercel, Netlify, GitHub Pages or Cloudflare Pages.
-No configuration is needed, because routing uses the URL hash.
+Every push to `main` builds the site and publishes it to GitHub Pages
+(`.github/workflows/pages.yml`). You can also run it by hand from the repository's Actions tab.
+
+To host it somewhere else, upload `dist/index.html` to any static host, such as Vercel, Netlify
+or Cloudflare Pages. No configuration is needed, because routing uses the URL hash.
 
 ## Add or change a topic
 
