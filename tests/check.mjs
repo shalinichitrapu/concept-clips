@@ -170,6 +170,43 @@ if (!filter || filter === "app") {
     }
   }
 }
+if (!filter || filter === "app") {
+  // Read aloud, with a stand-in voice that "speaks" each sentence in 150 ms and records what it said.
+  const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+  page.on("pageerror", e => report.pageErrors.push(`[read aloud] ${e.message}`));
+  await page.addInitScript(() => {
+    window.__spoken = [];
+    window.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
+    let cur = null;
+    Object.defineProperty(window, "speechSynthesis", { configurable: true, value: {
+      getVoices: () => [{ name: "Test", lang: "en-US" }], addEventListener() {},
+      speak(u) { __spoken.push(u.text); cur = setTimeout(() => u.onend && u.onend(), 150); },
+      cancel() { clearTimeout(cur); }
+    } });
+  });
+  const first = all.find(t => !t.errs.length && t.key === "high.math.manhattan-distance") || all.find(t => !t.errs.length);
+  await page.goto(URL + "#" + first.key);
+  await page.waitForFunction(() => CC.player && CC.player.topic);
+  const r = await page.evaluate(async () => {
+    const out = {};
+    out.buttonShown = !document.querySelector('[data-act="narrate"]').hidden;
+    document.querySelector('[data-act="narrate"]').click();
+    out.pressed = document.querySelector('[data-act="narrate"]').getAttribute("aria-pressed");
+    __spoken.length = 0;
+    await CC.player.goto(1);
+    await new Promise(r => setTimeout(r, 1500));
+    out.spokeStep = __spoken.join(" ").length > 0;
+    out.caption = CC.narration.speakable(CC.player.stage.flat[1].step.caption);
+    out.spoken = __spoken.join(" ");
+    document.querySelector('[data-act="narrate"]').click();
+    out.off = document.querySelector('[data-act="narrate"]').getAttribute("aria-pressed");
+    return out;
+  });
+  if (!r.buttonShown) report.app.push("read aloud: the button is hidden although speech is available");
+  if (r.pressed !== "true" || r.off !== "false") report.app.push("read aloud: the button doesn't toggle");
+  if (!r.spokeStep || r.spoken.replace(/\s+/g, " ").trim() !== r.caption.trim()) report.app.push(`read aloud: expected "${r.caption}", heard "${r.spoken}"`);
+  await page.close();
+}
 await browser.close();
 if (bundle.includes(".bundle-")) fs.rmSync(bundle, { force: true });
 

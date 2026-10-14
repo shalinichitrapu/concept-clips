@@ -129,7 +129,7 @@
         h("h1", { text: t.title }),
         h("p", { class: "lede", text: t.summary })),
       playerHost,
-      h("p", { class: "keys", text: "Keyboard: Space plays or pauses, the left and right arrows step back and forward." }),
+      h("p", { class: "keys", text: "Keyboard: Space plays or pauses, the left and right arrows step back and forward, and R turns reading aloud on or off." }),
       next
         ? h("a", { class: "up-next", href: `#${keyOf(next)}` },
             h("span", { class: "eyebrow", text: `Next in ${s.name}` }),
@@ -172,6 +172,7 @@
     if (e.key === " " && !e.target.closest("button, a")) { e.preventDefault(); player.toggle(); }
     else if (e.key === "ArrowRight") player.next();
     else if (e.key === "ArrowLeft") player.back();
+    else if (e.key === "r" || e.key === "R") player.toggleNarration();
   });
   document.getElementById("home-link").addEventListener("click", e => { e.preventDefault(); location.hash = current.level; });
   window.addEventListener("hashchange", route);
