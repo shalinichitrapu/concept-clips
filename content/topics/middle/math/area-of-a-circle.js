@@ -2,7 +2,7 @@ CC.topic({
   id: "area-of-a-circle",
   level: "middle",
   section: "math",
-  order: 2,
+  order: 5,
   title: "Area of a circle",
   summary: "Why the area of a circle is π × r × r, shown by cutting a pizza into slices and lining them up.",
   scenes: [
