@@ -6,7 +6,7 @@ CC.catalog = {
   ],
   sections: [
     { id: "math", name: "Math", icon: "icon.math",
-      blurb: { middle: "Fractions, shapes and the patterns behind them.", high: "Distance, slope and the functions behind graphs." } },
+      blurb: { middle: "Fractions, algebra, geometry and a first look at trigonometry.", high: "Distance, slope and the functions behind graphs." } },
     { id: "biology", name: "Biology", icon: "icon.biology",
       blurb: { middle: "Cells, bodies and how living things get energy.", high: "What happens inside cells, from DNA to energy." } },
     { id: "physics-chemistry", name: "Physics & Chemistry", icon: "icon.physics-chemistry",

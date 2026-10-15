@@ -2,7 +2,7 @@ CC.topic({
   id: "pythagorean-theorem",
   level: "middle",
   section: "math",
-  order: 3,
+  order: 6,
   title: "The Pythagorean theorem",
   summary: "How the sides of a right triangle are linked by a² + b² = c², and how to use it to find a ladder's length.",
   scenes: [

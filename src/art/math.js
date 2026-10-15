@@ -1,6 +1,6 @@
 // math illustrations. Names start with "math.".
 (() => {
-  const { line, shape, rect, circ, txt, F, K, STONE, WINDOW } = CC;
+  const { el, line, shape, rect, circ, txt, F, K, STONE, PAPER, WINDOW } = CC;
   const P = (x, y) => `${x.toFixed(2)},${y.toFixed(2)}`;
 
   // Slices of a disc centred at (cx, cy), cut along n lines starting at angle 0 (3 o'clock).
@@ -168,6 +168,125 @@
     "math.gondola": { w: 34, h: 34, draw(g) {
       rect(g, 3, 4, 28, 26, { fill: F("violet"), stroke: K("violet"), strokeWidth: 3 }, 7);
       rect(g, 9, 10, 16, 9, WINDOW, 2);
+    } },
+
+    // A cloth bag, 70 x 84, with d.text (default "x") on its front. Closed, it's tied at the neck;
+    // with d.open its mouth is open and what it holds shows: marbles, or blocks if d.holds is "blocks".
+    "math.bag": { w: 70, h: 84, draw(g, d) {
+      const t = d.tone || "violet", S = { fill: F(t), stroke: K(t), strokeWidth: 2.5, strokeLinejoin: "round" };
+      if (d.open) {
+        shape(g, "M12,30 C0,46 2,80 20,82 H50 C68,80 70,46 58,30 Z", S);
+        const I = { fill: F("teal"), stroke: K("teal"), strokeWidth: 2 };
+        if (d.holds === "blocks") [[15, 18], [28, 18], [41, 18], [28, 6]].forEach(([x, y]) => rect(g, x, y, 13, 13, I, 2));
+        else [[22, 25], [35, 25], [48, 25], [35, 13]].forEach(([x, y]) => circ(g, x, y, 7, I));
+        shape(g, "M10,30 C22,36 48,36 60,30", { fill: "none", stroke: K(t), strokeWidth: 3, strokeLinecap: "round" });
+      } else {
+        shape(g, "M18,30 C2,44 2,80 20,82 H50 C68,80 68,44 52,30 Z", S);
+        shape(g, "M24,28 L14,8 C26,13 44,13 56,8 L46,28 Z", S);
+        rect(g, 20, 25, 30, 7, { fill: K(t), stroke: K(t), strokeWidth: 1.5 }, 3);
+      }
+      const s = el("g", { transform: "translate(35,68) scale(1.7)" }, g);
+      txt(s, 0, 0, d.text || "x", "atom");
+    } },
+    // A single marble, 26 x 26.
+    "math.marble": { w: 26, h: 26, draw(g, d) {
+      const t = d.tone || "teal";
+      circ(g, 13, 13, 11, { fill: F(t), stroke: K(t), strokeWidth: 2.5 });
+      shape(g, "M8,11 C8,8 10,7 12,6.5", { fill: "none", stroke: "var(--canvas)", strokeWidth: 2.5, strokeLinecap: "round", opacity: .85 });
+    } },
+    // A small weight block, 28 x 28. Every block weighs the same.
+    "math.block": { w: 28, h: 28, draw(g, d) {
+      const t = d.tone || "teal";
+      rect(g, 2, 2, 24, 24, { fill: F(t), stroke: K(t), strokeWidth: 2.5 }, 4);
+      line(g, 8, 8, 14, 8, { stroke: "var(--canvas)", strokeWidth: 2.5, strokeLinecap: "round", opacity: .85 });
+    } },
+    // A balance scale, 540 x 250, with its pans on top. The beam pivots at (270, 150) and its ends
+    // are 175 from the pivot. Level, each pan's top is at y 80, from x 0 to 190 and from 350 to 540.
+    // d.tilt (degrees) raises the left pan by 175 × sin(tilt) and lowers the right pan by the same.
+    "math.balance": { w: 540, h: 250, draw(g, d) {
+      const a = (d.tilt || 0) * Math.PI / 180, cx = 270, cy = 150, L = 175, dy = L * Math.sin(a);
+      const G = { fill: F("grey"), stroke: K("grey"), strokeWidth: 2.5, strokeLinejoin: "round" };
+      shape(g, "M270,146 L304,236 H236 Z", G);
+      rect(g, 180, 234, 180, 14, G, 5);
+      [[cx - L, -dy], [cx + L, dy]].forEach(([ex, o]) => {
+        line(g, ex, 92 + o, ex, cy + o, { stroke: K("grey"), strokeWidth: 6, strokeLinecap: "round" });
+        shape(g, `M${P(ex - 95, 80 + o)} H${(ex + 95).toFixed(2)} L${P(ex + 84, 92 + o)} H${(ex - 84).toFixed(2)} Z`, G);
+      });
+      line(g, cx - L * Math.cos(a), cy - dy, cx + L * Math.cos(a), cy + dy, { stroke: K("grey"), strokeWidth: 8, strokeLinecap: "round" });
+      circ(g, cx, cy, 6, { fill: "var(--canvas)", stroke: K("grey"), strokeWidth: 3 });
+    } },
+
+    // A paper triangle with its three corners torn off (the pieces are math.corner).
+    // Corners at A (10, 215), B (310, 215), C (214.6, 10.4): angles 45°, 65° and 70°.
+    "math.tornTriangle": { w: 330, h: 230, draw(g, d) {
+      const V = d.pts || [[10, 215], [310, 215], [214.595, 10.405]], r = d.r || 64;
+      const pts = [];
+      V.forEach((v, i) => {
+        const [a0, a1] = cornerSpan(V, i);
+        pts.push(...tear(v[0], v[1], r, a0, a1).reverse());
+      });
+      shape(g, "M" + pts.map(p => P(...p)).join(" L") + " Z", { ...PAPER, strokeWidth: 2.5, strokeLinejoin: "round" });
+    } },
+    // One torn corner of a paper triangle, 150 x 150, with its point at the centre (75, 75).
+    // It spans the angles d.a0 to d.a1 (degrees, counterclockwise from 3 o'clock) and shows d.text.
+    "math.corner": { w: 150, h: 150, draw(g, d) {
+      const r = d.r || 64, t = d.tone || "red", a0 = d.a0 || 0, a1 = d.a1 ?? 60;
+      const pts = [[75, 75], ...tear(75, 75, r, a0, a1)];
+      shape(g, "M" + pts.map(p => P(...p)).join(" L") + " Z", { fill: F(t), stroke: K(t), strokeWidth: 2.5, strokeLinejoin: "round" });
+      if (d.text) {
+        const m = (a0 + a1) / 2 * Math.PI / 180, k = d.tr || .62;
+        const s = el("g", { transform: `translate(${P(75 + r * k * Math.cos(m), 75 - r * k * Math.sin(m) + 6)}) scale(1.3)` }, g);
+        txt(s, 0, 0, d.text, "atom");
+      }
+    } },
+    // A triangle, 320 x 240, with corners d.pts (counterclockwise) and each angle shaded in its
+    // tone (d.tones). d.right is the index of a right angle, drawn as a small square.
+    "math.triangle": { w: 320, h: 240, draw(g, d) {
+      const V = d.pts, tones = d.tones || ["red", "blue", "amber"], r = d.r || 34, R = Math.PI / 180;
+      shape(g, "M" + V.map(p => P(...p)).join(" L") + " Z", { fill: F("grey"), stroke: "none" });
+      V.forEach((v, i) => {
+        const [a0, a1] = cornerSpan(V, i), t = tones[i];
+        const st = { fill: F(t), stroke: K(t), strokeWidth: 2, strokeLinejoin: "round" };
+        const at = (a, k) => [v[0] + k * Math.cos(a * R), v[1] - k * Math.sin(a * R)];
+        if (i === d.right) {
+          const q = 20, u = at(a0, q), w = at(a1, q);
+          shape(g, `M${P(...v)} L${P(...u)} L${P(u[0] + w[0] - v[0], u[1] + w[1] - v[1])} L${P(...w)} Z`, st);
+        } else {
+          shape(g, `M${P(...v)} L${P(...at(a0, r))} A${r},${r} 0 0 0 ${P(...at(a1, r))} Z`, st);
+        }
+      });
+      shape(g, "M" + V.map(p => P(...p)).join(" L") + " Z", { fill: "none", stroke: K("grey"), strokeWidth: 3, strokeLinejoin: "round" });
+    } },
+
+    // A tall pine tree, 120 x 250: its tip is at (60, 4) and its trunk stands on y 250.
+    "math.tree": { w: 120, h: 250, draw(g) {
+      rect(g, 51, 196, 18, 54, { fill: "var(--root)", stroke: "var(--soil-s)", strokeWidth: 2 }, 2);
+      const S = { fill: F("green"), stroke: K("green"), strokeWidth: 2.5, strokeLinejoin: "round" };
+      shape(g, "M60,96 L116,204 H4 Z", S);
+      shape(g, "M60,46 L104,140 H16 Z", S);
+      shape(g, "M60,4 L92,80 H28 Z", S);
     } }
   });
+
+  // Angles (degrees, counterclockwise from 3 o'clock, y up) of the two sides at corner i of a
+  // triangle whose corners V go counterclockwise on screen: from the side to the next corner
+  // round to the side to the previous one.
+  function cornerSpan(V, i) {
+    const v = V[i], nx = V[(i + 1) % 3], pv = V[(i + 2) % 3];
+    const ang = p => Math.atan2(-(p[1] - v[1]), p[0] - v[0]) * 180 / Math.PI;
+    let a0 = ang(nx), a1 = ang(pv);
+    if (a0 < 0) a0 += 360;
+    while (a1 < a0) a1 += 360;
+    return [a0, a1];
+  }
+  // Points along a torn, zigzag edge of radius r around (cx, cy) from angle a0 to a1 (degrees,
+  // counterclockwise from 3 o'clock). The pieces and the torn triangle share it, so they fit together.
+  function tear(cx, cy, r, a0, a1) {
+    const n = Math.max(4, Math.round((a1 - a0) / 7)), pts = [];
+    for (let i = 0; i <= n; i++) {
+      const a = (a0 + (a1 - a0) * i / n) * Math.PI / 180, rr = i === 0 || i === n ? r : r + (i % 2 ? 4 : -3);
+      pts.push([cx + rr * Math.cos(a), cy - rr * Math.sin(a)]);
+    }
+    return pts;
+  }
 })();

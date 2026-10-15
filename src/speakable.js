@@ -51,7 +51,59 @@
          .replace(/\b1 (degree|kilogram|meter|kilometer|newton|foot|hertz)s?\b/g, (m, u) => `1 ${u}`)
          .replace(/\b1 feet\b/g, "1 foot")
          .replace(/\ba ([\d.,]+) (degree|kilogram|meter|kilometer|newton)s\b/g, "a $1 $2");   // "a 15 kilogram cart"
+    s = numbersToWords(s);
     return s.replace(/\s+([,.;:!?])(?=\s|$)/g, "$1").replace(/\s{2,}/g, " ").trim();
+  }
+
+  /* ---------- numbers ---------- */
+  // Voices misread digits ("$1,000" as "dollar one zero zero zero", "0.083" without the point),
+  // so every number is spelled out in words before it's spoken.
+  const ONES = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
+    "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+  const TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+  const SCALES = [[1e12, "trillion"], [1e9, "billion"], [1e6, "million"], [1e3, "thousand"]];
+  function words(n) {
+    if (n < 20) return ONES[n];
+    if (n < 100) return TENS[Math.floor(n / 10)] + (n % 10 ? "-" + ONES[n % 10] : "");
+    if (n < 1000) return ONES[Math.floor(n / 100)] + " hundred" + (n % 100 ? " " + words(n % 100) : "");
+    for (const [v, name] of SCALES) if (n >= v) return words(Math.floor(n / v)) + " " + name + (n % v ? " " + words(n % v) : "");
+  }
+  const digitWords = d => [...d].map(c => ONES[+c]).join(" ");
+  // 1914 → "nineteen fourteen", 1905 → "nineteen oh five", 1800 → "eighteen hundred", 2005 → "two thousand five"
+  function year(n) {
+    if (n >= 2000 && n < 2010) return words(n);
+    const hi = Math.floor(n / 100), lo = n % 100;
+    return words(hi) + (lo === 0 ? " hundred" : lo < 10 ? " oh " + ONES[lo] : " " + words(lo));
+  }
+  const plural = w => w.endsWith("y") ? w.slice(0, -1) + "ies" : w + "s";             // forty → forties
+  const ORD = { one: "first", two: "second", three: "third", five: "fifth", eight: "eighth", nine: "ninth", twelve: "twelfth" };
+  const ordinal = w => w.replace(/([a-z]+)$/, m => ORD[m] || (m.endsWith("y") ? m.slice(0, -1) + "ieth" : m + "th"));
+  const INT = "\\d{1,3}(?:,\\d{3})+|\\d+";
+  const num = t => +t.replace(/,/g, "");
+  const isYear = t => /^(1[1-9]\d\d|20\d\d)$/.test(t);
+
+  function numbersToWords(s) {
+    return s
+      .replace(/\b([23])D\b/g, (m, d) => `${ONES[d]} D`)                  // 3D → "three D"
+      // IP addresses: 203.0.113.10 → "two hundred three dot zero dot ..."
+      .replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g, m => m.split(".").map(p => words(+p)).join(" dot "))
+      // Money: $1,000 → "one thousand dollars", $0.50 → "zero dollars and fifty cents"
+      .replace(new RegExp(`\\$(${INT})(?:\\.(\\d\\d))?`, "g"), (m, d, c) =>
+        `${words(num(d))} dollar${num(d) === 1 ? "" : "s"}${c && +c ? ` and ${words(+c)} cent${+c === 1 ? "" : "s"}` : ""}`)
+      // Decimals: 0.083 → "zero point zero eight three"
+      .replace(new RegExp(`\\b(${INT})\\.(\\d+)\\b`, "g"), (m, i, f) => `${words(num(i))} point ${digitWords(f)}`)
+      // Binary and other digit strings: 1101 → "one one zero one", 0101 → "zero one zero one"
+      .replace(/\b(?:[01]{4,}|0\d+)\b(?!\.\d)/g, digitWords)
+      // Decades: 1800s → "eighteen hundreds", 1940s → "nineteen forties"; 0s and 1s → "zeros and ones"
+      .replace(/\b(\d{3,4})s\b/g, (m, d) => plural(isYear(d) ? year(+d) : words(+d)))
+      .replace(/\b0s\b/g, "zeros").replace(/\b1s\b/g, "ones")
+      // Ordinals: 23rd → "twenty-third"
+      .replace(/\b(\d+)(st|nd|rd|th)\b/g, (m, d) => ordinal(words(+d)))
+      // Percentages: 24% → "twenty-four percent"
+      .replace(new RegExp(`\\b(${INT})%`, "g"), (m, d) => `${words(num(d))} percent`)
+      .replace(/%/g, " percent")
+      // Years, then every other whole number
+      .replace(new RegExp(`\\b(${INT})\\b`, "g"), (m, d) => isYear(d) ? year(+d) : words(num(d)));
   }
 
   root.CC.speakable = speakable;

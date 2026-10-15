@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node tests/check.mjs",
+    "test": "node tests/speakable.mjs && node tests/check.mjs",
     "start": "node scripts/build.mjs && open dist/index.html"
   },
   "devDependencies": {
