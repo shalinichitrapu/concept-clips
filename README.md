@@ -37,7 +37,7 @@ from `src/art/`, then run the checks.
 ## Check it
 
 ```bash
-npm test                              # every topic and the app pages
+npm test                              # pronunciation, every topic and the app pages
 node tests/check.mjs high.math        # just some topics
 ```
 
